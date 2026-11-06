@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { initFetchInterceptor, NetworkLog } from '../core/fetchInterceptor';
+import { StorageInspector } from './StorageInspector';
 
 export const DevCompanion: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'network' | 'storage'>('network');
   const [logs, setLogs] = useState<NetworkLog[]>([]);
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export const DevCompanion: React.FC = () => {
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
         }}
       >
-        🛠️ Dev Companion ({logs.length})
+        Dev Companion ({logs.length})
       </button>
 
       {isOpen && (
@@ -35,44 +37,83 @@ export const DevCompanion: React.FC = () => {
             position: 'absolute',
             bottom: 50,
             right: 0,
-            width: 360,
-            height: 300,
+            width: 380,
+            height: 340,
             background: '#0f172a',
             color: '#f8fafc',
             borderRadius: '8px',
             padding: '12px',
             boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-            overflowY: 'auto'
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
-          <h4 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #334155', paddingBottom: '6px' }}>
-            Tráfego de API
-          </h4>
-          {logs.length === 0 ? (
-            <p style={{ color: '#94a3b8', fontSize: '13px' }}>Nenhuma requisição capturada ainda.</p>
+          {/* Main Panel Navigation Header */}
+          <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #334155', paddingBottom: '8px', marginBottom: '8px' }}>
+            <button
+              onClick={() => setActiveTab('network')}
+              style={{
+                background: activeTab === 'network' ? '#0284c7' : '#1e293b',
+                color: '#fff',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Network
+            </button>
+            <button
+              onClick={() => setActiveTab('storage')}
+              style={{
+                background: activeTab === 'storage' ? '#0284c7' : '#1e293b',
+                color: '#fff',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Storage
+            </button>
+          </div>
+
+          {/* Panel Content */}
+          {activeTab === 'network' ? (
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {logs.length === 0 ? (
+                <p style={{ color: '#94a3b8', fontSize: '13px' }}>No requests captured yet.</p>
+              ) : (
+                logs.map((log: NetworkLog) => (
+                  <div
+                    key={log.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '6px 0',
+                      borderBottom: '1px solid #1e293b',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <span style={{ fontWeight: 'bold', color: log.method === 'GET' ? '#38bdf8' : '#4ade80' }}>
+                      [{log.method}]
+                    </span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
+                      {log.url}
+                    </span>
+                    <span style={{ color: log.status && log.status >= 400 ? '#f87171' : '#facc15' }}>
+                      {log.status || 'PENDING'}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
           ) : (
-            logs.map((log: NetworkLog) => (
-              <div
-                key={log.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '6px 0',
-                  borderBottom: '1px solid #1e293b',
-                  fontSize: '12px'
-                }}
-              >
-                <span style={{ fontWeight: 'bold', color: log.method === 'GET' ? '#38bdf8' : '#4ade80' }}>
-                  [{log.method}]
-                </span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
-                  {log.url}
-                </span>
-                <span style={{ color: log.status && log.status >= 400 ? '#f87171' : '#facc15' }}>
-                  {log.status || 'PENDING'}
-                </span>
-              </div>
-            ))
+            <StorageInspector />
           )}
         </div>
       )}
