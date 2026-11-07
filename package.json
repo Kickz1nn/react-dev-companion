@@ -1,15 +1,15 @@
 {
-  "name": "react-dev-companion",
+  "name": "@kickd0wn/react-dev-companion",
   "version": "0.1.0",
   "type": "module",
-  "description": "Embeddable React DevTools panel for real-time API monitoring and browser storage management",
-  "main": "./dist/index.umd.js",
-  "module": "./dist/index.es.js",
+  "description": "A zero-dependency DevTools overlay for React and Next.js applications.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.es.js",
-      "require": "./dist/index.umd.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
     }
   },
@@ -18,34 +18,25 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "npx tsc && vite build",
-    "preview": "vite preview",
-    "test": "echo \"No tests specified yet\" && exit 0",
-    "prepare": "husky"
-  },
-  "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "build": "tsc && vite build",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "react",
-    "devtools",
-    "fetch-interceptor",
-    "network-monitor",
     "nextjs",
-    "open-source"
+    "devtools",
+    "storage",
+    "network-interceptor",
+    "typescript"
   ],
-  "author": "Kickz1nn",
+  "author": "Kickz1nn <https://github.com/Kickz1nn>",
   "license": "MIT",
-  "devDependencies": {
-    "@commitlint/cli": "^21.2.4",
-    "@commitlint/config-conventional": "^21.2.4",
-    "@types/node": "^26.6.6",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@typescript/typescript6": "^6.0.2",
-    "@vitejs/plugin-react": "^6.2.1",
-    "typescript": "^7.0.2",
-    "vite-plugin-dts": "^5.1.2"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kickz1nn/react-dev-companion.git"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
   }
 }
