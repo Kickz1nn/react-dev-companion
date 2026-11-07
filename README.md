@@ -1,7 +1,7 @@
 # React Dev Companion
 
 ![CI](https://img.shields.io/github/actions/workflow/status/Kickz1nn/react-dev-companion/ci.yml?branch=main)
-![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-dev-companion)
+![npm bundle size](https://img.shields.io/bundlephobia/minzip/@kickd0wn/react-dev-companion)
 ![License](https://img.shields.io/github/license/Kickz1nn/react-dev-companion)
 ![GitHub issues](https://img.shields.io/github/issues/Kickz1nn/react-dev-companion)
 
@@ -12,9 +12,11 @@ React Dev Companion is an embeddable, zero-dependency developer tools panel for 
 ## Features
 
 - **Real-Time API Interception:** Monitors outgoing `window.fetch` calls and logs HTTP methods, request status, and target URLs.
+- **Storage Inspector:** View, inject, and delete keys across `localStorage`, `sessionStorage`, and `cookies` in real time.
 - **Framework Agnostic Support:** Compatible with React SPA setups (Vite, CRA) and SSR frameworks (Next.js client components).
 - **Non-Intrusive Overlay:** Floating UI widget designed to stay out of the way of primary application elements.
 - **Zero Heavy Dependencies:** Lightweight footprint focused on developer experience and minimal bundle impact.
+- **TypeScript Native:** Fully typed with built-in `.d.ts` declarations.
 
 ---
 
@@ -23,13 +25,19 @@ React Dev Companion is an embeddable, zero-dependency developer tools panel for 
 Install the package via `npm`, `yarn`, or `pnpm`:
 
 ```bash
-npm install react-dev-companion
+npm install @kickd0wn/react-dev-companion
 ```
 
 Or using yarn:
 
 ```bash
-yarn add react-dev-companion
+yarn add @kickd0wn/react-dev-companion
+```
+
+Or using pnpm:
+
+```bash
+pnpm add @kickd0wn/react-dev-companion
 ```
 
 ---
@@ -43,7 +51,7 @@ Import and render the component within your application tree. It is recommended 
 ```tsx
 'use client';
 
-import { DevCompanion } from 'react-dev-companion';
+import { DevCompanion } from '@kickd0wn/react-dev-companion';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -61,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ```tsx
 import React from 'react';
-import { DevCompanion } from 'react-dev-companion';
+import { DevCompanion } from '@kickd0wn/react-dev-companion';
 
 export function App() {
   return (
