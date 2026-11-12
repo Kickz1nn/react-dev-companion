@@ -5,6 +5,8 @@ export interface NetworkLog {
   status?: number;
   duration?: number;
   timestamp: string;
+  requestData?: any;
+  responseData?: any;
 }
 
 type LogCallback = (log: NetworkLog) => void;
@@ -29,6 +31,7 @@ export const initFetchInterceptor = (onLog: LogCallback) => {
 
     let url = '';
     let method = 'GET';
+    let requestData: any = null;
 
     if (typeof args[0] === 'string') {
       url = args[0];
@@ -39,25 +42,33 @@ export const initFetchInterceptor = (onLog: LogCallback) => {
       method = args[0].method || 'GET';
     }
 
-    if (args[1] && args[1].method) {
-      method = args[1].method.toUpperCase();
+    if (args[1]) {
+      if (args[1].method) method = args[1].method.toUpperCase();
+      if (args[1].body) {
+        try {
+          requestData = typeof args[1].body === 'string' ? JSON.parse(args[1].body) : args[1].body;
+        } catch {
+          requestData = args[1].body;
+        }
+      }
     }
 
-    // 1. Simulation of Network Delay (waits before firing the fetch)
+    // 1. Simulation of Network Delay
     if (networkConfig.delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, networkConfig.delayMs));
     }
 
-    // 2. Simulation of Offline Mode (blocks the fetch before firing)
+    // 2. Simulation of Offline Mode
     if (networkConfig.isOffline) {
       const endTime = performance.now();
       onLog({
         id,
         url,
         method,
-        status: 0, // 0 = Failed / Aborted
+        status: 0,
         duration: Math.round(endTime - startTime),
         timestamp: new Date().toLocaleTimeString(),
+        requestData,
       });
 
       throw new TypeError('Failed to fetch (Simulated Offline Mode)');
@@ -67,6 +78,20 @@ export const initFetchInterceptor = (onLog: LogCallback) => {
       const response = await originalFetch(...args);
       const endTime = performance.now();
 
+      // Clonamos a resposta para ler o corpo sem consumir a stream principal
+      let responseData: any = null;
+      try {
+        const clonedResponse = response.clone();
+        const text = await clonedResponse.text();
+        try {
+          responseData = JSON.parse(text);
+        } catch {
+          responseData = text;
+        }
+      } catch {
+        responseData = '[Unable to parse response body]';
+      }
+
       onLog({
         id,
         url,
@@ -74,6 +99,8 @@ export const initFetchInterceptor = (onLog: LogCallback) => {
         status: response.status,
         duration: Math.round(endTime - startTime),
         timestamp: new Date().toLocaleTimeString(),
+        requestData,
+        responseData,
       });
 
       return response;
@@ -87,6 +114,8 @@ export const initFetchInterceptor = (onLog: LogCallback) => {
         status: 0,
         duration: Math.round(endTime - startTime),
         timestamp: new Date().toLocaleTimeString(),
+        requestData,
+        responseData: String(error),
       });
 
       throw error;
