@@ -13,6 +13,8 @@ export const NetworkTab = ({ logs = [], onClear }: NetworkTabProps) => {
   const [isOffline, setIsOffline] = useState(networkConfig.isOffline);
   const [delay, setDelay] = useState(networkConfig.delayMs);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
+  const [detailTab, setDetailTab] = useState<'response' | 'payload'>('response');
 
   useEffect(() => {
     injectDevCompanionStyles();
@@ -36,7 +38,10 @@ export const NetworkTab = ({ logs = [], onClear }: NetworkTabProps) => {
     return matchesSearch && matchesMethod;
   });
 
-  const handleCopyCurl = (log: NetworkLog) => {
+  const selectedLog = logs.find((l) => l.id === selectedLogId);
+
+  const handleCopyCurl = (log: NetworkLog, e: React.MouseEvent) => {
+    e.stopPropagation();
     const curl = `curl -X ${log.method} "${log.url}"`;
     navigator.clipboard.writeText(curl);
     setCopiedId(log.id);
@@ -53,6 +58,16 @@ export const NetworkTab = ({ logs = [], onClear }: NetworkTabProps) => {
     }
   };
 
+  const formatData = (data: any) => {
+    if (!data) return 'No data';
+    if (typeof data === 'string') return data;
+    try {
+      return JSON.stringify(data, null, 2);
+    } catch {
+      return String(data);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
       {/* Simulation Controls */}
@@ -60,7 +75,8 @@ export const NetworkTab = ({ logs = [], onClear }: NetworkTabProps) => {
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent
+          : 'space-between',
           background: theme.cardBg,
           padding: '8px 10px',
           borderRadius: '6px',
@@ -138,7 +154,10 @@ export const NetworkTab = ({ logs = [], onClear }: NetworkTabProps) => {
 
         {onClear && (
           <button
-            onClick={onClear}
+            onClick={() => {
+              setSelectedLogId(null);
+              onClear();
+            }}
             title="Clear request history"
             style={{
               padding: '6px 10px',
@@ -156,103 +175,187 @@ export const NetworkTab = ({ logs = [], onClear }: NetworkTabProps) => {
         )}
       </div>
 
-      {/* Requests List */}
-      <div className="dev-companion-scroll" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: '2px' }}>
-        {filteredLogs.length === 0 ? (
-          <p style={{ color: theme.textSecondary, fontSize: '12px', textAlign: 'center', marginTop: '24px' }}>
-            No requests captured.
-          </p>
-        ) : (
-          filteredLogs.map((log) => {
-            const isError = !log.status || log.status >= 400;
-            const statusColor = isError ? theme.danger : theme.success;
+      {/* Main Container: List + Detail Split View */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflow: 'hidden' }}>
+        {/* Requests List */}
+        <div
+          className="dev-companion-scroll"
+          style={{
+            flex: selectedLog ? '0 0 140px' : '1',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            paddingRight: '2px',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {filteredLogs.length === 0 ? (
+            <p style={{ color: theme.textSecondary, fontSize: '12px', textAlign: 'center', marginTop: '24px' }}>
+              No requests captured.
+            </p>
+          ) : (
+            filteredLogs.map((log) => {
+              const isError = !log.status || log.status >= 400;
+              const statusColor = isError ? theme.danger : theme.success;
+              const isSelected = selectedLogId === log.id;
 
-            return (
-              <div
-                key={log.id}
+              return (
+                <div
+                  key={log.id}
+                  onClick={() => setSelectedLogId(isSelected ? null : log.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    background: isSelected ? theme.hoverBg : theme.cardBg,
+                    borderRadius: '6px',
+                    border: `1px solid ${isSelected ? theme.accent : theme.borderSubtle}`,
+                    fontSize: '12px',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        color: getMethodColor(log.method),
+                        fontSize: '11px',
+                        background: theme.bg,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        border: `1px solid ${theme.border}`,
+                        minWidth: '45px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {log.method}
+                    </span>
+                    <span
+                      title={log.url}
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '170px',
+                        color: theme.textPrimary,
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                      }}
+                    >
+                      {log.url}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    {log.duration !== undefined && (
+                      <span style={{ color: theme.textSecondary, fontSize: '10px', fontFamily: 'monospace' }}>
+                        {log.duration}ms
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        color: statusColor,
+                        fontWeight: 700,
+                        fontSize: '11px',
+                        background: `${statusColor}15`,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {log.status || 'ERR'}
+                    </span>
+                    <button
+                      onClick={(e) => handleCopyCurl(log, e)}
+                      title="Copy cURL"
+                      style={{
+                        background: copiedId === log.id ? theme.success : theme.hoverBg,
+                        color: copiedId === log.id ? '#000' : theme.textPrimary,
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '3px 8px',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {copiedId === log.id ? 'Copied!' : 'cURL'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Selected Request Detail Panel */}
+        {selectedLog && (
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              background: theme.cardBg,
+              borderRadius: '6px',
+              border: `1px solid ${theme.border}`,
+              overflow: 'hidden',
+            }}
+          >
+            {/* Detail Tabs */}
+            <div style={{ display: 'flex', borderBottom: `1px solid ${theme.border}`, background: theme.bg }}>
+              <button
+                onClick={() => setDetailTab('response')}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
-                  background: theme.cardBg,
-                  borderRadius: '6px',
-                  border: `1px solid ${theme.borderSubtle}`,
-                  fontSize: '12px',
-                  flexShrink: 0,
+                  flex: 1,
+                  padding: '6px',
+                  background: detailTab === 'response' ? theme.cardBg : 'transparent',
+                  color: detailTab === 'response' ? theme.accent : theme.textSecondary,
+                  border: 'none',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      color: getMethodColor(log.method),
-                      fontSize: '11px',
-                      background: theme.bg,
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      border: `1px solid ${theme.border}`,
-                      minWidth: '45px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {log.method}
-                  </span>
-                  <span
-                    title={log.url}
-                    style={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      maxWidth: '170px',
-                      color: theme.textPrimary,
-                      fontFamily: 'monospace',
-                      fontSize: '11px',
-                    }}
-                  >
-                    {log.url}
-                  </span>
-                </div>
+                Response Body
+              </button>
+              <button
+                onClick={() => setDetailTab('payload')}
+                style={{
+                  flex: 1,
+                  padding: '6px',
+                  background: detailTab === 'payload' ? theme.cardBg : 'transparent',
+                  color: detailTab === 'payload' ? theme.accent : theme.textSecondary,
+                  border: 'none',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Request Payload
+              </button>
+            </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                  {log.duration !== undefined && (
-                    <span style={{ color: theme.textSecondary, fontSize: '10px', fontFamily: 'monospace' }}>
-                      {log.duration}ms
-                    </span>
-                  )}
-                  <span
-                    style={{
-                      color: statusColor,
-                      fontWeight: 700,
-                      fontSize: '11px',
-                      background: `${statusColor}15`,
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                    }}
-                  >
-                    {log.status || 'ERR'}
-                  </span>
-                  <button
-                    onClick={() => handleCopyCurl(log)}
-                    title="Copy cURL"
-                    style={{
-                      background: copiedId === log.id ? theme.success : theme.hoverBg,
-                      color: copiedId === log.id ? '#000' : theme.textPrimary,
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '3px 8px',
-                      fontSize: '10px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {copiedId === log.id ? 'Copied!' : 'cURL'}
-                  </button>
-                </div>
-              </div>
-            );
-          })
+            {/* Data View */}
+            <div className="dev-companion-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+              <pre
+                style={{
+                  margin: 0,
+                  fontSize: '10px',
+                  fontFamily: 'monospace',
+                  color: theme.textPrimary,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {detailTab === 'response'
+                  ? formatData(selectedLog.responseData)
+                  : formatData(selectedLog.requestData)}
+              </pre>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -6,6 +6,7 @@ import { theme, injectDevCompanionStyles } from './styles';
 export const StorageTab = () => {
   const [storageType, setStorageType] = useState<StorageType>('localStorage');
   const [items, setItems] = useState<StorageItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
 
@@ -61,6 +62,20 @@ export const StorageTab = () => {
     loadItems();
   };
 
+  const handleClearAll = () => {
+    if (items.length === 0) return;
+    if (!confirm(`Are you sure you want to clear all ${storageType} items?`)) return;
+
+    if (storageType === 'localStorage') {
+      localStorage.clear();
+    } else if (storageType === 'sessionStorage') {
+      sessionStorage.clear();
+    } else if (storageType === 'cookie') {
+      getCookies().forEach((c) => deleteCookie(c.key));
+    }
+    loadItems();
+  };
+
   const handleImportJSON = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -85,10 +100,16 @@ export const StorageTab = () => {
     reader.readAsText(file);
   };
 
+  const filteredItems = items.filter(
+    (item) =>
+      item.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.value.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
-      {/* Sub-tabs & Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Sub-tabs & Actions Aligned */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
         <div style={{ display: 'flex', gap: '4px', background: theme.cardBg, padding: '3px', borderRadius: '6px', border: `1px solid ${theme.border}` }}>
           {(['localStorage', 'sessionStorage', 'cookie'] as StorageType[]).map((type) => (
             <button
@@ -111,13 +132,13 @@ export const StorageTab = () => {
           ))}
         </div>
 
-        {/* Refresh + Export / Import */}
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        {/* Refresh + Clear All + Export / Import */}
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
           <button
             onClick={loadItems}
             title="Refresh storage data"
             style={{
-              padding: '5px 8px',
+              padding: '4px 8px',
               fontSize: '11px',
               background: theme.cardBg,
               color: theme.accent,
@@ -130,10 +151,29 @@ export const StorageTab = () => {
             ↻ Refresh
           </button>
 
+          {items.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              title="Clear all entries"
+              style={{
+                padding: '4px 8px',
+                fontSize: '11px',
+                background: theme.cardBg,
+                color: theme.danger,
+                border: `1px solid ${theme.border}`,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              Clear All
+            </button>
+          )}
+
           <button
             onClick={() => exportStorageJSON(storageType)}
             style={{
-              padding: '5px 9px',
+              padding: '4px 8px',
               fontSize: '11px',
               background: theme.cardBg,
               color: theme.textPrimary,
@@ -147,7 +187,7 @@ export const StorageTab = () => {
           </button>
           <label
             style={{
-              padding: '5px 9px',
+              padding: '4px 8px',
               fontSize: '11px',
               background: theme.cardBg,
               color: theme.textPrimary,
@@ -163,11 +203,30 @@ export const StorageTab = () => {
         </div>
       </div>
 
+      {/* Filter / Search Bar */}
+      <input
+        type="text"
+        placeholder="Filter storage by key or value..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{
+          width: '100%',
+          padding: '6px 10px',
+          background: theme.cardBg,
+          color: theme.textPrimary,
+          border: `1px solid ${theme.border}`,
+          borderRadius: '6px',
+          fontSize: '11px',
+          outline: 'none',
+          boxSizing: 'border-box',
+        }}
+      />
+
       {/* Items Table */}
       <div className="dev-companion-scroll" style={{ flex: 1, overflowY: 'auto', background: theme.cardBg, borderRadius: '6px', border: `1px solid ${theme.border}` }}>
-        {items.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <p style={{ color: theme.textSecondary, fontSize: '12px', textAlign: 'center', padding: '24px 0' }}>
-            No items found in {storageType}.
+            {items.length === 0 ? `No items found in ${storageType}.` : 'No matching items found.'}
           </p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', color: theme.textPrimary }}>
@@ -179,7 +238,7 @@ export const StorageTab = () => {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <tr key={item.key} style={{ borderBottom: `1px solid ${theme.borderSubtle}` }}>
                   <td style={{ padding: '8px', fontWeight: 600, color: theme.methodGet, fontFamily: 'monospace', wordBreak: 'break-all' }}>
                     {item.key}

@@ -1,6 +1,6 @@
 {
   "name": "@kickd0wn/react-dev-companion",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "A zero-dependency DevTools overlay for React and Next.js applications.",
   "main": "./dist/index.js",

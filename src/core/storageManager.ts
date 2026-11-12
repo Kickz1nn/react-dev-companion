@@ -57,3 +57,15 @@ export const setStorageItem = (key: string, value: string, type: 'local' | 'sess
     document.cookie = `${key}=${encodeURIComponent(value)}; path=/;`;
   }
 };
+
+export const clearAllStorage = (type: 'local' | 'session' | 'cookie') => {
+  if (type === 'local') localStorage.clear();
+  else if (type === 'session') sessionStorage.clear();
+  else if (type === 'cookie') {
+    document.cookie.split(';').forEach((cookie) => {
+      const eqPos = cookie.indexOf('=');
+      const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+      document.cookie = `${name.trim()}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    });
+  }
+};
